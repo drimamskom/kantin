@@ -1,0 +1,220 @@
+<?php
+
+if (!defined('BASEPATH')) exit('No Direct Script Access Allowed');
+
+class Mdashboard extends CI_Model {
+
+        function __construct() {
+            parent::__construct();
+            $this->load->library('sap');  
+        }
+            
+        public function get_menu(){
+            $this->db->select("*");
+            $this->db->from("INTRANSIT_MMENU");
+            $this->db->where(array("MENUPARENT"=>0));
+            $this->db->where(array("SEGMENT"=>1));
+            $this->db->order_by("IDMENU","ASC");
+            $result = $this->db->get("");
+            return ($result->num_rows() > 0) ? $result->result() : false;
+        }
+        
+	public function get_plant($param){            
+            $comp  = (!empty($param['comp'])) ? $param['comp'] : '7000';     
+            
+            $sap = new SAPConnection();
+            $sap->Connect();
+            if ($sap->GetStatus() == SAPRFC_OK)
+                $sap->Open();
+            if ($sap->GetStatus() != SAPRFC_OK) {
+                $sap->PrintStatus();
+                exit;
+            }
+
+            $fce = $sap->NewFunction("Z_ZAPP_SELECT_SYSPLAN");
+            if ($fce == false) {
+                $sap->PrintStatus();
+                exit;
+            }
+            //Param Export
+            $dataPlant = array();
+            
+            $fce->XPARAM = $comp;
+            
+            $fce->Call();
+            if($fce->GetStatus() == SAPRFC_OK) {
+                $fce->RETURN_DATA->Reset();
+                $i=0;
+                while ($fce->RETURN_DATA->Next()){
+                    $dataPlant[$i]["kode"]=$fce->RETURN_DATA->row["WERKS"];
+                    $dataPlant[$i]["nama"]=trim($fce->RETURN_DATA->row["NAME1"]);
+                    $i++;
+                }
+                //display error
+                $status = trim($fce->RETURN["TYPE"]);
+                if($status=='E'){
+                    $message = $fce->RETURN["MESSAGE"];
+                }else{ 
+                    $message = 'Berhasil Ambil data';
+                }
+            }            
+            $fce->Close();
+            $sap->Close();
+            return array('hasil' => $dataPlant, 'status' => $status, 'message' => $message);  
+        }
+        
+	public function get_data_antrian($param){   
+            $comp  = (!empty($param['comp'])) ? $param['comp'] : '7000';     
+            $plant = (!empty($param['plant'])) ? $param['plant'] : '7403';   
+            
+            $sap = new SAPConnection();
+            $sap->Connect();
+            if ($sap->GetStatus() == SAPRFC_OK)
+                $sap->Open();
+            if ($sap->GetStatus() != SAPRFC_OK) {
+                $sap->PrintStatus();
+                exit;
+            }
+
+            $fce = $sap->NewFunction("Z_ZAPPSD_SEL_TRNS_HDR2");
+            if ($fce == false) {
+                $sap->PrintStatus();
+                exit;
+            }   
+            
+            //Param Export
+            $dataHdr = array();
+            
+            $fce->XPARAM["STATUS_TRANS"] = '10';
+            $fce->XDATA_APP["NMORG"]  = $comp;
+            $fce->XDATA_APP["NMPLAN"] = $plant;
+            
+            //Execute Function
+            $fce->Call();
+            if ($fce->GetStatus() == SAPRFC_OK) {
+                $fce->RETURN_DATA->Reset();
+                //Display Tables
+                $i = 0;
+                $bulk = 0;
+                $bag = 0;
+                while ($fce->RETURN_DATA->Next()) {
+                    if($fce->RETURN_DATA->row["TIPE_TRUK"]=='308'){ $bulk++; }else{ $bag++; }
+                    $dataHdr[$i]["NO_ANTRI"] = $fce->RETURN_DATA->row["NO_TRANSAKSI"];
+                    $dataHdr[$i]["NO_POLISI"] = $fce->RETURN_DATA->row["NO_POLISI"];
+                    $dataHdr[$i]["KD_EXPEDITUR"] = $fce->RETURN_DATA->row["NO_EXPEDITUR"];
+                    $dataHdr[$i]["NM_EXPEDITUR"] = $fce->RETURN_DATA->row["NAMA_EXPEDITUR"];
+                    $dataHdr[$i]["KAPASITAS"] = $fce->RETURN_DATA->row["KAPASITAS"]*1;
+                    $dataHdr[$i]["TGL_ANTRI"] = $this->toDate($fce->RETURN_DATA->row["TGL_ANTRI"]);
+                    $dataHdr[$i]["JAM_ANTRI"] = $this->toTime($fce->RETURN_DATA->row["JAM_ANTRI"]);
+                    $i++;
+                }
+            }            
+            $fce->Close();
+            $sap->Close();
+            return array('hasil' => $dataHdr, 'bag' => $bag, 'bulk' => $bulk);                
+        }
+        
+        public function get_data_all($param){   
+            $comp  = (!empty($param['comp'])) ? $param['comp'] : '7000';     
+            $plant = (!empty($param['plant'])) ? $param['plant'] : '7403';  
+            
+            $sap = new SAPConnection();
+            $sap->Connect();
+            if ($sap->GetStatus() == SAPRFC_OK)
+                $sap->Open();
+            if ($sap->GetStatus() != SAPRFC_OK) {
+                $sap->PrintStatus();
+                exit;
+            }
+
+            $fce = $sap->NewFunction("Z_ZAPPSD_RPT_REAL");
+            if ($fce == false) {
+                $sap->PrintStatus();
+                exit;
+            }   
+            
+            //Param Export
+            $dataHdr = array();
+            
+            $fce->X_STATUS = '40';
+            $fce->X_STATUS_TO = '50';
+            $fce->X_VKORG = $comp;
+            $fce->X_WERKS = $plant;
+            $fce->X_WO_KONFIRMASI ='X';
+            
+            //Execute Function
+            $fce->Call();
+            if ($fce->GetStatus() == SAPRFC_OK) {
+                $fce->ZDATA->Reset();
+                //Display Tables
+                while ($fce->ZDATA->Next()) {
+                    $trns = $fce->ZDATA->row["NO_TRANSAKSI"];
+//                    if($fce->ZDATA->row["TIPE_TRUK"]=='308'){ 
+//                        if($fce->ZDATA->row["STATUS"]=='40'){ $bulk['40'][$trns]=1; }else{ $bulk['50'][$trns]=1; }
+//                    }else{ 
+//                        if($fce->ZDATA->row["STATUS"]=='40'){ $bag['40'][$trns]=1; }else{ $bag['50'][$trns]=1; }
+//                    }                              
+                    $dataHdr[$trns]["NO_TRANSAKSI"] = $trns;
+                    $dataHdr[$trns]["KWANTUMX"] += intval($fce->ZDATA->row["KWANTUMX"]);
+                    $dataHdr[$trns]["NAMA_SOPIR"] = $fce->ZDATA->row["NAMA_SOPIR"];
+                    $dataHdr[$trns]["NO_POLISI"] = $fce->ZDATA->row["NO_POLISI"];
+                    $dataHdr[$trns]["TIPE_TRUK"] = $fce->ZDATA->row["TIPE_TRUK"];
+                    $dataHdr[$trns]["KD_EXPEDITUR"] = $fce->ZDATA->row["NO_EXPEDITUR"];
+                    $dataHdr[$trns]["NM_EXPEDITUR"] = $fce->ZDATA->row["NAMA_EXPEDITUR"];
+                    $dataHdr[$trns]["STATUS"] = $fce->ZDATA->row["STATUS"];
+                    $dataHdr[$trns]["PRODUK"] = $fce->ZDATA->row["PRODUK"];
+                    $dataHdr[$trns]["ITEM_NO"] = $fce->ZDATA->row["ITEM_NO"];
+                    $dataHdr[$trns]["BERAT_KOSONG"] = $fce->ZDATA->row["BERAT_KOSONG"]*1;
+                    $dataHdr[$trns]["KOTA"] = $fce->ZDATA->row["NAMA_AREA"];
+                    $dataHdr[$trns]["TUJUAN"] .= $fce->ZDATA->row['NAMA_TOKO']." ".$fce->ZDATA->row['ALAMAT_DA'].", ".$fce->ZDATA->row['NAMA_AREA']."|";
+                    $dataHdr[$trns]["TGL_ISI"] = $this->toDate($fce->ZDATA->row["TGL_ISI"]);
+                    $dataHdr[$trns]["JAM_ISI"] = $this->toTime($fce->ZDATA->row["JAM_ISI"]);
+                    $dataHdr[$trns]["TGL_MASUK"] = $this->toDate($fce->ZDATA->row["TGL_MASUK"]);
+                    $dataHdr[$trns]["JAM_MASUK"] = $this->toTime($fce->ZDATA->row["JAM_MASUK"]);
+                    $dataHdr[$trns]["CNV"] = isset($fce->ZDATA->row["LSTEL"]) ? $fce->ZDATA->row["LSTEL"] : $fce->ZDATA->row["LOADING_POINT"]; 
+                }
+            }
+            $fce->Close();
+            $sap->Close();
+            $bulk = array();
+            $bag  = array();
+            $hasil_40=array();
+            $hasil_50=array();
+            $hasil_55=array();
+            foreach ($dataHdr as $rows){
+                if($rows["STATUS"]=="40"){
+                    if($rows["TIPE_TRUK"]=='308'){ $bulk['40']+=1; }else{ $bag['40']+=1; }
+                    array_push($hasil_40, $rows);
+                }else if(($rows["STATUS"]=="50")&&(empty($rows["CNV"]))){
+                    if($rows["TIPE_TRUK"]=='308'){ $bulk['50']+=1; }else{ $bag['50']+=1; }
+                    array_push($hasil_50, $rows);
+                }else{                    
+                    if($rows["TIPE_TRUK"]=='308'){ $bulk['55']+=1; }else{ $bag['55']+=1; }
+                    array_push($hasil_55, $rows);
+                }                
+            }
+            return array('hasil_40' => $hasil_40, 'hasil_50' => $hasil_50, 'hasil_55' => $hasil_55, 'bag' => $bag, 'bulk' => $bulk );          
+        }
+
+        protected function toDateTime($tgl, $jam) {
+            $disply_tgl = substr($tgl, 6, 2) . '-' . substr($tgl, 4, 2) . '-' . substr($tgl, 0, 4);
+            $disply_jam = substr($jam, 0, 2) . ':' . substr($jam, 2, 2) . ':' . substr($jam, 4, 2);
+            $display = $disply_tgl . ' ' . $disply_jam;
+            return $display;
+        }
+
+        protected function toDate($tgl) {
+            $blns = array("KS", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember");
+            $bulan = intval(substr($tgl, 4, 2));
+            $disply_tgl = substr($tgl, 6, 2) . ' ' . $blns[$bulan] . ' ' . substr($tgl, 0, 4);
+            $display = $disply_tgl;
+            return $display;
+        }
+
+        protected function toTime($jam) {
+            $disply_jam = substr($jam, 0, 2) . ':' . substr($jam, 2, 2) . ':' . substr($jam, 4, 2);
+            $display = $disply_jam;
+            return $display;
+        }
+
+}

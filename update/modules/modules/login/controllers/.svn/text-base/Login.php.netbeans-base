@@ -1,0 +1,126 @@
+<?php if(!defined('BASEPATH')) exit ('No Direct Script Access Allowed');
+
+class Login extends CI_Controller {
+    
+    function __construct() {
+        parent::__construct();
+        $this->load->library('sap');   
+    }
+    
+    public function index($param='') {
+	if($param == 'error'){
+           $param = 'Username atau Password salah';	
+        }
+	$data = array('message'=>$param);
+	$this->load->view('login_view',$data);
+    }
+            
+    function do_logout(){
+        $this->session->sess_destroy();
+        redirect(base_url());
+    }
+    
+    public function do_login(){
+        $data = $this->input->post(null,true);
+        $user = $data['username'];
+	$pass = $data['password'];
+					
+	$ldap['user'] = $user."@smig.corp"; // di tambahn @semenindonesia
+        if (empty($pass)){
+            $ldap['pass'] = $pass.'aascs'; //biar error
+        }else{
+            $ldap['pass'] = $pass;            
+        }
+	
+        //  print_r($ldap);
+	$ldap['host'] = 'smig.corp';
+        $ldap['port'] = 389;
+        $ldap['conn'] = ldap_connect($ldap['host'], $ldap['port'])or die("Could not conenct to {$ldap['host']}");
+	ldap_set_option($ldap['conn'], LDAP_OPT_PROTOCOL_VERSION, 3);
+        @$ldap['bind'] = ldap_bind($ldap['conn'], $ldap['user'], $ldap['pass']);
+        if($ldap['bind']){
+            $this->session->set_userdata('ses_log_id',array(
+                            'is_login'	=> true,
+                            'username' => $user,
+                            'fullname' => $user
+                        )
+                    );
+            redirect(base_url());
+        }else{
+            redirect(base_url()."index.php/login/index/error");
+        }
+        ldap_close($ldap['conn']);
+    }
+
+    public function act_login(){
+        $data = $this->input->post(null,true);        
+        $uid = $data['username'];
+	$pwd = md5($data['password']);
+        $user = $this->getUser($uid);
+        
+        if(count($user) > 0) {
+            if ($user['USERPWD'] === strtolower($pwd)) {
+                $userdata['is_login'] = true;
+                $userdata['username'] = $user['LOGINNAME'];
+                $userdata['fullname'] = $user['FULLNAME'];
+                $userdata['uorg'] = $user['NMORGN'];
+                $userdata['uplant'] = $user['NMPLAN'];
+                $userdata['uvendor'] = $user['VENDOR_NAME'];
+                
+                $this->session->set_userdata('ses_log_id',$userdata);
+                redirect(base_url());
+            } else {
+                redirect(base_url()."index.php/login/index/error");
+            }
+        } else {
+            redirect(base_url()."index.php/login/index/error");
+        }
+        
+    }
+    public function getUser($uname) {
+        $sap = new SAPConnection();
+        $sap->Connect();
+        if ($sap->GetStatus() == SAPRFC_OK)
+            $sap->Open();
+        if ($sap->GetStatus() != SAPRFC_OK) {
+            $sap->PrintStatus();
+            exit;
+        }
+
+        $fce = $sap->NewFunction("Z_ZAPP_SELECT_USER");
+        if ($fce == false) {
+            $sap->PrintStatus();
+            exit;
+        }
+        
+        //Param Export
+        $dataget = array();
+            
+        $fce->XPARAM["LOGINNAME"] = strtoupper($uname);
+        
+        $fce->Call();
+        if ($fce->GetStatus() == SAPRFC_OK) {
+            //Display Tables
+            $fce->RETURN_DATA->Reset();
+            $i = 0;
+            while ($fce->RETURN_DATA->Next()) {
+                $dataget["LOGINNAME"] = $fce->RETURN_DATA->row["LOGINNAME"];
+                $dataget["NMORGN"] = $fce->RETURN_DATA->row["NMORGN"];
+                $dataget["FULLNAME"] = $fce->RETURN_DATA->row["FULLNAME"];
+                $dataget["NMPLAN"] = $fce->RETURN_DATA->row["NMPLAN"];
+                $dataget["USERPWD"] = $fce->RETURN_DATA->row["USERPWD"];
+                $dataget["LIFNR"] = $fce->RETURN_DATA->row["LIFNR"];
+                $dataget["VENDOR_NAME"] = $fce->RETURN_DATA->row["VENDOR_NAME"];
+                $i++;
+            }
+
+            //display error
+            if (trim($fce->RETURN["TYPE"]) == 'E')
+                return array();
+        }            
+        $fce->Close();
+        $sap->Close();            
+        return $dataget;
+    }
+    
+}

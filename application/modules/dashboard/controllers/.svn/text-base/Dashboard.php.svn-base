@@ -1,0 +1,37 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+class Dashboard extends CI_Controller {
+
+        public $list_wkt = array('3'=>'180000', '5'=>'300000', '10'=>'600000'); // 1 detik = 1000;
+        public $deff_wkt = '5';
+    
+	function __construct(){
+            parent::__construct();
+            $this->load->model('mdashboard','',true);   
+	}
+        
+	public function index(){
+            $menux = $this->mdashboard->get_menu();
+            $datax = array('list_waktu'=>$this->list_wkt, 'def_waktu'=>$this->deff_wkt);
+            $this->load->view('header',array('list_menu'=>$menux));
+            $this->load->view('dashboard',$datax);
+            $this->load->view('footer');
+	}
+        
+	public function get_plant(){            
+           $datax = $this->mdashboard->get_plant($_POST);
+           echo json_encode($datax);
+        }
+        
+	public function get_data_antrian(){            
+           $datax = $this->mdashboard->get_data_antrian($_POST);
+           echo json_encode($datax);
+        }
+        
+	public function get_data_all(){            
+           $datax = $this->mdashboard->get_data_all($_POST);
+           echo json_encode($datax);
+        }
+        
+}

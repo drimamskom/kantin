@@ -1,0 +1,702 @@
+<?php
+$comp  = isset($comp) ? $comp : '7000';     
+$plant = isset($plant) ? $plant : '7403';
+?>
+<style>
+    .selectwidthauto {
+         width:auto !important;
+         display: inline-block;
+    }
+    .fullsize-div{
+        overflow:hidden;
+    }
+    .loadingx{
+        position: relative;
+        width: 100%;
+        height: 100%;
+        line-height: 100%;
+        text-align: center;
+    }
+    .loadingx span {
+        position: absolute;
+        top: 50%;
+        left: 45%;
+        transform: translate(-50%, -50%);
+    }
+</style>
+<div class="panel panel-default" style="margin-bottom:5px;">
+    <div class="panel-body" style="padding-top:5px;padding-bottom:5px;">
+        <div class="row">
+            <div class="col-xs-12 col-sm-6 col-md-10">
+                <table>
+                    <tr>
+                        <td><h5>COMPANY</h5></td>
+                        <td style="padding-left:5px;">
+                            <select class="form-control" id="filterComp" name="filterComp" onchange="getplant()" width="100px">
+                           <!-- <option value="3000">3000 PT.Semen Padang</option>   
+                                <option value="4000">4000 PT.Semen Tonasa</option> -->
+                                <option value="5000" <?if($comp=='5000'){echo 'selected';} ?>>5000 PT.Semen Gresik</option>   
+                                <option value="7000" <?if($comp=='7000'){echo 'selected';} ?>>7000 PT.Semen Indonesia</option>                                        
+                            </select>
+                        </td>
+                        <td style="padding-left:5px;"><h5>PLANT</h5></td>
+                        <td style="padding-left:5px;">
+                            <select class="form-control" id="filterPlant" name="filterPlant" width="100px">
+                                <!-- <option value="7403" selected>7403-UP Tuban</option> -->
+                            </select>
+                        </td>
+                        <td style="padding-left:5px;">
+                            <button class="btn btn-primary" id="carix" onclick="do_filter()"><span class="glyphicon glyphicon-search"></span> Cari</button>
+                            <img id="filter_animation" src="<?php echo base_url();?>assets/img/loading.gif" width="30"/>
+                        </td>
+                    </tr>
+                </table>   
+            </div>
+            <div class="col-xs-12 col-xs-6 col-md-2">  
+                <table>
+                    <tr>
+                        <td>
+                            <select class="form-control selectwidthauto" id="fill_duration" name="fill_duration" onchange="setDuration()">
+                                <?php
+                                foreach ($list_waktu as $key => $value) {
+                                    if($key==$def_waktu){
+                                       echo '<option value="'.$value.'" selected>'.$key.' Menit</option>'; 
+                                    }else{
+                                       echo '<option value="'.$value.'">'.$key.' Menit</option>';
+                                    }                                
+                                }
+                                ?>
+                            </select>
+                        </td>
+                        <td style="padding-left:5px;">
+                            <a href="javascript:void(0);"> <button class="btn btn-warning"><span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span> <b><span id="time_countdown"></span></b></button> </a>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="col-content-1 col-lg-3 col-sm-6 col-xs-12"> 
+    <div class="row">
+      <div class="col-md-12">        
+        <div class="header-content-1"> 
+            <p class="title-header">ANTRIAN <br>TRUCK</p>
+            <div><img class="img-header-1" src="<?php echo base_url();?>assets/img/img-1.png"></div>
+            <div class="div-nilai-header">
+                <p class="nilai-header">
+                    <span id="nilai_antri_truk"></span>              
+                </p>
+                <p class="nilai-header-truck"><span id="bag_antri_truk"></span>  Bag - <span id="bulk_antri_truk"></span>  Bulk</p>
+            </div>
+        </div> 
+        <a id="show_antritruk" href="" target="_self"> <!--  link to sub dashboard -->
+            <div class="sub-header-content-1"> 
+                <div class="img-sub-header">
+                    <span class="glyphicon glyphicon-share"></span> Detail
+                </div>
+            </div> 
+        </a>
+        <div id="result_antri" class="content-1 fullsize-div">            
+            <!--            
+            <div class="row-content-1 row"> 
+                <div class="row-content-1-left col-sm-6 col-xs-6"> 
+                    <p class="label-content-1">No. Plat :</p>
+                    <p class="plat-content-1">W 1234 SL</p> 
+                    <p class="comp-content-1">DUTA NIAGA KENCANA</p>  
+                </div>
+                <div class="row-content-1-right col-sm-5 col-xs-5">
+                    <p class="label-content-1">Waktu Tiba :</p>
+                    <p class="time-content-1">08 : 11 : 11 wib</p> 
+                    <p class="label-content-1">Berat Truck :</p>
+                    <p class="weight-content-1">5 TON</p> 
+                </div>
+            </div>   
+            -->
+        </div>
+      </div>
+    </div>    
+</div>  
+
+<div class="col-content-2 col-lg-3 col-sm-6 col-xs-12"> 
+    <div class="header-content-2">
+        <p class="title-header">TRUCK MATCHING <br>SO</p>
+        <div><img class="img-header-2" src="<?php echo base_url();?>assets/img/img-2.png"></div>
+        <div class="div-nilai-header">
+            <p class="nilai-header">
+                <span id="nilai_matchso"></span>              
+            </p>
+            <p class="nilai-header-truck"><span id="bag_matchso"></span>  Bag - <span id="bulk_matchso"></span>  Bulk</p>
+        </div>
+    </div> 
+    <a id="show_matchso" href="" target="_self"> <!--  link to sub dashboard -->
+        <div class="sub-header-content-2"> 
+            <div class="img-sub-header">
+                <span class="glyphicon glyphicon-share"></span> Detail
+            </div>
+        </div> 
+    </a>
+    <div id="result_matchso" class="content-1 fullsize-div">  
+        <!--        
+        <div class="row-content-2 row"> 
+            <div class="row-content-1-left col-sm-6 col-xs-6"> 
+                <p class="label-content-1">No. Plat :</p>
+                <p class="plat-content-1" style="color:#59fa4e">W 1234 SL</p> 
+                <p class="comp-content-1">DUTA NIAGA KENCANA</p>  
+            </div>
+            <div class="row-content-1-right col-sm-5 col-xs-5">
+                <div class="label-content-1">
+                    <img class="img-driver" src="<?php echo base_url();?>assets/img/img-driver.png"/>
+                    <span class="data-content-1" style="margin-left:-7px;">Yunus</span>
+                </div>
+                <div class="div-label-content-2">
+                    <p class="label-content-1">Kapasitas :</p>
+                    <p class="data-content-1">5 TON</p>
+                </div>
+                <div class="div-label-content-2">
+                    <p class="label-content-1">Tujuan :</p>
+                    <p class="data-content-1">Gresik</p>
+                </div>
+            </div>
+        </div> 
+        -->
+    </div>
+</div> 
+
+<div class="col-content-3 col-lg-3 col-sm-6 col-xs-12"> 
+    <div class="header-content-3"> 
+    <p class="title-header">TIMBANG <br>MASUK</p>
+        <div><img class="img-header-3" src="<?php echo base_url();?>assets/img/img-3.png"></div> 
+        <div class="div-nilai-header">
+            <p class="nilai-header">
+                <span id="nilai_trukmasuk"></span>              
+            </p>
+            <p class="nilai-header-truck"><span id="bag_trukmasuk"></span>  Bag - <span id="bulk_trukmasuk"></span>  Bulk</p>
+        </div>
+    </div> 
+    <a id="show_timbang" href="" target="_self"> <!--  link to sub dashboard -->
+        <div class="sub-header-content-3"> 
+            <div class="img-sub-header">
+                <span class="glyphicon glyphicon-share"></span> Detail
+            </div>
+        </div> 
+    </a>
+    <div id="result_trukmasuk" class="content-1 fullsize-div">
+        <!--        
+        <div class="row-content-3 row">                       
+            <div class="row-content-1-left col-sm-6 col-xs-6"> 
+                <p class="label-content-1">No. Plat :</p>
+                <p class="plat-content-1">W 1234 SL</p> 
+                <p class="comp-content-1">DUTA NIAGA KENCANA</p>  
+            </div>
+            <div class="row-content-1-right col-sm-5 col-xs-5">
+                <div class="label-content-1">
+                    <img class="img-driver" src="<?php echo base_url();?>assets/img/img-driver.png"/>
+                    <span class="data-content-1" style="margin-left:-7px;">Yunus</span>
+                </div>
+                <div class="div-label-content-1">
+                    <p class="label-content-1">Berat Kosong :</p>
+                    <p class="data-content-1">5 TON</p>
+                </div>
+                <div class="div-label-content-1">
+                    <p class="label-content-1">Kota :</p>
+                    <p class="data-content-1">Gresik</p>
+                </div>
+            </div>
+        </div> 
+        -->
+    </div>
+</div> 
+
+
+<div class="col-content-4 col-lg-3 col-sm-6 col-xs-12"> 
+    <div class="header-content-4"> 
+        <p class="title-header">TRUCK IN <br>LOADER</p>
+        <div><img class="img-header-4" src="<?php echo base_url();?>assets/img/img-4.png"></div>
+        <div class="div-nilai-header">
+            <p class="nilai-header">
+                <span id="nilai_cnvload"></span>              
+            </p>
+            <p class="nilai-header-truck"><span id="bag_cnvload"></span>  Bag - <span id="bulk_cnvload"></span>  Bulk</p>
+        </div>
+    </div>     
+    <a id="show_loading" href="" target="_self"> <!--  link to sub dashboard -->
+        <div class="sub-header-content-4"> 
+            <div class="img-sub-header">
+                <span class="glyphicon glyphicon-share"></span> Detail
+            </div>
+        </div> 
+    </a>
+    <div id="result_cnvload" class="content-1 fullsize-div">
+        <!--        
+        <div class="row-content-4 row"> 
+            <div class="row-content-1-left col-sm-6 col-xs-6"> 
+                <p class="label-content-1">No. Plat :</p>
+                <p class="plat-content-1">W 1234 SL</p> 
+                <p class="comp-content-1">DUTA NIAGA KENCANA</p> 
+                <p class="label-content-1">No. Konveyor :</p>
+                <p class="data-content-konveyor">0016</p>
+            </div>
+            <div class="row-content-1-right col-sm-5 col-xs-5">
+                <div class="label-content-1">
+                    <img class="img-driver" src="<?php echo base_url();?>assets/img/img-driver.png"/>
+                    <span class="data-content-1" style="margin-left:-7px;">Yunus</span>
+                </div>
+                <p class="label-content-1">Waktu Mulai :</p>
+                <p class="time-content-1">08 : 11 : 11 wib</p> 
+                <p class="label-content-1">Muatan :</p>
+                <p class="weight-content-1">5 TON</p>             
+            </div>  
+        </div> 
+        -->
+    </div>
+</div>
+
+<script type="text/javascript">
+    var alltime, viewtime;
+    var timer, timer2, timer3, timer4;
+    var begin=1, begin2=1, begin3=1, begin4=1;
+    var end=0, end2=0, end3=0, end4=0;
+    var last=0, last2=0, last3=0, last4=0;
+    $(function () {  
+        var duration = parseInt($('#fill_duration').val());
+        $('#filter_animation').hide();
+        getplant();
+        do_filter();
+        setwidth(); // full screen div
+        $(window).bind('resize', setwidth);
+        alltime = setInterval(do_filter,duration); //1000 MS == 1 second
+    });
+    function setDuration(){
+        clearInterval(alltime);
+        do_filter();
+        var duration = parseInt($('#fill_duration').val());
+        alltime = setInterval(do_filter,duration); //1000 MS == 1 second
+    }
+    function do_filter(){
+        changelink();
+        clearInterval(viewtime);
+        $("#time_countdown").html("00:00"); 
+        var duration = parseInt($('#fill_duration').val());
+        startTimer(duration);
+        clearInterval(timer);
+        clearInterval(timer2);
+        clearInterval(timer3);
+        clearInterval(timer4);
+        getDataAntri();
+        getDataAll();
+    }
+    function getDataAntri() {
+        $('#nilai_antri_truk').html('0');
+        $('#bag_antri_truk').html('0');
+        $('#bulk_antri_truk').html('0');
+        $('#result_antri').html('');
+        var comp  = $('#filterComp').val();
+        var plantx = $('#filterPlant').val();
+        if(plantx==null){ var plant='<?=$plant?>'; }else{ var plant=plantx; }
+        var loadingx = '<div id="lod_data_antri" class="loadingx">'+
+                            '<span>'+
+                                '<img src="'+base_url+'assets/img/loading.gif" width="45"/>'+
+                                '<font color="#3f51b5" face="arial" size="4">&nbsp Loading...</font>'+
+                           ' </span>'+
+                        '</div>';
+        $('#result_antri').append(loadingx);
+        var data_post = {comp:comp, plant:plant };
+        $.post("<?= base_url('index.php/dashboard/get_data_antrian')?>", data_post, function(res) { 
+            $('#bag_antri_truk').html(res.bag);
+            $('#bulk_antri_truk').html(res.bulk); 
+            var result = res.hasil;
+            $("#lod_data_antri").remove();
+            $('#nilai_antri_truk').html(result.length);
+            end=(result.length);
+            for (var i = 0; i < result.length; i++) {
+                var idnex = 'numberkotak_'+i;
+                var div = '<div class="row-content-1 row '+idnex+' ">'+
+                              '<div class="row-content-1-left col-sm-6 col-xs-6">'+ 
+                                '<p class="label-content-1">No. Plat :</p>'+
+                                '<p class="plat-content-1">'+ result[i].NO_POLISI +'</p> '+
+                                '<p class="comp-content-1">'+ result[i].NM_EXPEDITUR +'</p>'+
+                                '<p class="label-content-1">No. Antri :</p>'+
+                                '<p class="comp-content-1">'+ result[i].NO_ANTRI +'</p>'+
+                              '</div>'+
+                              '<div class="row-content-1-right col-sm-5 col-xs-5">'+
+                                '<p class="label-content-1">Waktu Tiba :</p>'+
+                                '<p class="date-time-content-1">'+ result[i].TGL_ANTRI +'</p> '+
+                                '<p class="time-content-1">'+ result[i].JAM_ANTRI +' WIB</p> '+
+                                '<p class="label-content-1">Kapasitas Truck :</p>'+
+                                '<p class="weight-content-1">'+ result[i].KAPASITAS +' TON</p> '+
+                              '</div>'+
+                            '</div>';            
+                $('#result_antri').append(div);
+            }
+            $('#result_antri').animate({ scrollTop: 0 });
+            timer = setInterval(scrollDown,3000); //1000 MS == 1 second
+            
+        },'json'); 
+    }
+    
+    function getDataAll() {
+        var comp  = $('#filterComp').val();
+        var plantx = $('#filterPlant').val();
+        if(plantx==null){ var plant='<?=$plant?>'; }else{ var plant=plantx; }
+        //RESET MATCHSO
+        $('#nilai_matchso').html('0');
+        $('#bag_matchso').html('0');
+        $('#bulk_matchso').html('0');
+        $('#result_matchso').html('');
+        var loading1 = '<div id="lod_matchso" class="loadingx">'+
+                            '<span>'+
+                                '<img src="'+base_url+'assets/img/loading.gif" width="45"/>'+
+                                '<font color="#3f51b5" face="arial" size="4">&nbsp Loading...</font>'+
+                           ' </span>'+
+                        '</div>';
+        $('#result_matchso').append(loading1);
+        //RESET TIMBANG MASUK
+        $('#nilai_trukmasuk').html('0');
+        $('#bag_trukmasuk').html('0');
+        $('#bulk_trukmasuk').html('0');
+        $('#result_trukmasuk').html('');
+        var loading2 = '<div id="lod_trukmasuk" class="loadingx">'+
+                            '<span>'+
+                                '<img src="'+base_url+'assets/img/loading.gif" width="45"/>'+
+                                '<font color="#3f51b5" face="arial" size="4">&nbsp Loading...</font>'+
+                           ' </span>'+
+                        '</div>';
+        $('#result_trukmasuk').append(loading2);
+        //RESET IN LOADING CNV
+        $('#nilai_cnvload').html('0');
+        $('#bag_cnvload').html('0');
+        $('#bulk_cnvload').html('0');
+        $('#result_cnvload').html('');
+        var loading3 = '<div id="lod_cnvload" class="loadingx">'+
+                            '<span>'+
+                                '<img src="'+base_url+'assets/img/loading.gif" width="45"/>'+
+                                '<font color="#3f51b5" face="arial" size="4">&nbsp Loading...</font>'+
+                           ' </span>'+
+                        '</div>';
+        $('#result_cnvload').append(loading3);
+        //LOADING DATA
+        var data_post = {comp:comp, plant:plant };
+        $.post("<?= base_url('index.php/dashboard/get_data_all')?>", data_post, function(res) { 
+            //CREATE STATUS 40
+            $('#bag_matchso').html(res.bag['40']);
+            $('#bulk_matchso').html(res.bulk['40']); 
+            var result = res.hasil_40;
+            $("#lod_matchso").remove();
+            $('#nilai_matchso').html(result.length);
+            end2=(result.length);
+            for (var i = 0; i < result.length; i++) {
+                var tujuan = result[i].TUJUAN;
+                var sopir = result[i].NAMA_SOPIR;
+                var text1 = tujuan.slice(0,-1);
+                var text2 = text1.replace('|','<br>');
+                var idnex = 'numberkotak2_'+i;                
+                var div = '<div class="row-content-2 row '+idnex+'">'+
+                            '<div clas="row">'+
+                                '<div class="row-content-1-left col-sm-6 col-xs-6">'+
+                                    '<p class="label-content-1">No. Plat :</p>'+
+                                    '<p class="plat-content-1">'+ result[i].NO_POLISI +'</p>'+
+                                    '<p class="comp-content-1">'+ result[i].NM_EXPEDITUR +'</p>'+  
+                                '</div>'+
+                                '<div class="row-content-1-right col-sm-6 col-xs-6">'+
+                                    '<div class="label-content-1">'+
+                                        '<img class="img-driver" src="'+base_url+'assets/img/img-driver.png"/>'+
+                                        '<span class="data-content-1" style="margin-left:-7px;">'+ sopir.slice(0,9) +'</span>'+
+                                    '</div>'+
+                                    '<div class="div-label-content-2">'+
+                                        '<p class="label-content-1">'+ result[i].PRODUK +'</p>'+
+                                        '<p class="data-content-1">'+ result[i].KWANTUMX +' TON</p>'+
+                                    '</div>'+
+                                '</div>'+
+                            '</div>'+
+                            '<div clas="row">'+
+                                '<div class="row-content-1-left col-sm-11 col-xs-11">'+
+                                    '<div class="div-label-content-2">'+
+                                        '<p class="label-content-1">Tujuan :</p>'+
+                                        '<p class="label-content-1" style="color:#ff7043;">'+ text2 +'</p>'+
+                                    '</div>'+
+                                '</div>'+
+                            '</div>'+
+                        '</div>';          
+                $('#result_matchso').append(div);
+            }
+            $('#result_matchso').animate({ scrollTop: 0 });
+            timer2 = setInterval(scrollDown2,3000); //1000 MS == 1 second
+            
+            //CREATE STATUS 50
+            $('#bag_trukmasuk').html(res.bag['50']);
+            $('#bulk_trukmasuk').html(res.bulk['50']); 
+            var result2 = res.hasil_50;
+            $("#lod_trukmasuk").remove();
+            $('#nilai_trukmasuk').html(result2.length);
+            end3=(result2.length);
+            for (var n = 0; n < result2.length; n++) {
+                var sopir2 = result2[n].NAMA_SOPIR;
+                var idne2 = 'numberkotak3_'+n;  
+                var div2 = '<div class="row-content-3 row '+idne2+'">'+
+                                '<div class="row-content-1-left col-sm-6 col-xs-6">'+
+                                    '<p class="label-content-1">No. Plat :</p>'+
+                                    '<p class="plat-content-1">'+ result2[n].NO_POLISI +'</p>'+ 
+                                    '<p class="comp-content-1">'+ result2[n].NM_EXPEDITUR +'</p>'+                                     
+                                    '<p class="label-content-1">Waktu Timbang :</p>'+
+                                    '<p class="date-time-content-1">'+ result2[n].TGL_MASUK +'</p> '+
+                                    '<p class="time-content-1">'+ result2[n].JAM_MASUK +' WIB</p> '+
+                                '</div>'+
+                                '<div class="row-content-1-right col-sm-5 col-xs-5">'+
+                                    '<div class="label-content-1">'+
+                                        '<img class="img-driver" src="'+base_url+'assets/img/img-driver.png"/>'+
+                                        '<span class="data-content-1" style="margin-left:-7px;">'+ sopir2.slice(0,9) +'</span>'+
+                                    '</div>'+
+                                    '<div class="div-label-content-1">'+
+                                        '<p class="label-content-1">Berat Kosong :</p>'+
+                                        '<p class="data-content-1">'+ result2[n].BERAT_KOSONG +' TON</p>'+
+                                    '</div>'+
+                                    '<div class="div-label-content-1">'+
+                                        '<p class="label-content-1">Kota :</p>'+
+                                        '<p class="data-content-1">'+ result2[n].KOTA +'</p>'+
+                                    '</div>'+
+                                '</div>'+
+                            '</div>';      
+                $('#result_trukmasuk').append(div2);
+            }
+            $('#result_trukmasuk').animate({ scrollTop: 0 });
+            timer3 = setInterval(scrollDown3,3000); //1000 MS == 1 second
+            
+            //CREATE STATUS 50 + ada conveyor
+            $('#bag_cnvload').html(res.bag['55']);
+            $('#bulk_cnvload').html(res.bulk['55']); 
+            var result3 = res.hasil_55;
+            $("#lod_cnvload").remove();
+            $('#nilai_cnvload').html(result3.length);
+            end4=(result3.length);
+            for (var p = 0; p < result3.length; p++) {
+                var sopir3 = result3[p].NAMA_SOPIR;
+                var idne3 = 'numberkotak4_'+p;  
+                var div3 = '<div class="row-content-4 row '+idne3+'">'+
+                                '<div class="row-content-1-left col-sm-6 col-xs-6">'+ 
+                                    '<p class="label-content-1">No. Plat :</p>'+
+                                    '<p class="plat-content-1">'+ result3[p].NO_POLISI +'</p>'+ 
+                                    '<p class="comp-content-1">'+ result3[p].NM_EXPEDITUR +'</p>'+ 
+                                    '<p class="label-content-1">No. Konveyor :</p>'+
+                                    '<p class="data-content-konveyor">'+ result3[p].CNV +'</p>'+
+                                '</div>'+
+                                '<div class="row-content-1-right col-sm-5 col-xs-5">'+
+                                    '<div class="label-content-1">'+
+                                        '<img class="img-driver" src="'+base_url+'assets/img/img-driver.png"/>'+
+                                        '<span class="data-content-1" style="margin-left:-7px;">'+ sopir3.slice(0,9) +'</span>'+
+                                    '</div>'+
+                                    '<p class="label-content-1">Produk :</p>'+
+                                    '<p class="weight-content-1">'+ result3[p].PRODUK +'</p>'+ 
+                                    '<p class="label-content-1">Muatan :</p>'+
+                                    '<p class="weight-content-1">'+ result3[p].KWANTUMX +' TON</p>'+             
+                                '</div>'+
+                            '</div>'; 
+                $('#result_cnvload').append(div3);
+            }
+            $('#result_cnvload').animate({ scrollTop: 0 });
+            timer4 = setInterval(scrollDown4,3000); //1000 MS == 1 second
+        },'json'); 
+    }
+    function setwidth() {
+        $(".fullsize-div").css({'height':($(window).height()-233)+'px'});
+    }
+    function scrollDown() {
+        if(begin<end){            
+            if($('#result_antri').scrollTop() + $('#result_antri').innerHeight() >= $('#result_antri')[0].scrollHeight) {
+                begin++;
+                //console.log('end of scroll result_antri');
+            }else{
+                var from = begin-1;
+                if(begin==1){
+                    var scrollFrom=$('#result_antri').offset().top;
+                }else{
+                    var scrollFrom = $('.numberkotak_'+from).offset().top;
+                }        
+                var scrollTo = $('.numberkotak_'+begin).offset().top;
+                // scroll one
+                $('#result_antri').animate({
+                    scrollTop: scrollTo-scrollFrom+last
+                },1000);
+                last=scrollTo-scrollFrom+last;
+                begin++;
+
+                //$('.numberkotak_'+from).hide( 'slide', {}, 1000, callback );
+                //$('.numberkotak_1').effect( 'slide', {}, 1000, callback ); //Effect OUT
+            }
+        }else{
+            $('#result_antri').animate({ scrollTop: 0 }, 1000);
+            begin=1;
+            last=0;
+        }        
+    }
+    function scrollDown2() {
+        if(begin2<end2){
+            if($('#result_matchso').scrollTop() + $('#result_matchso').innerHeight() >= $('#result_matchso')[0].scrollHeight) {
+                begin2++;
+                //console.log('end of scroll result_matchso');
+            }else{
+                var from2 = begin2-1;
+                if(begin2==1){
+                    var scrollFrom2 = $('#result_matchso').offset().top;
+                }else{
+                    var scrollFrom2 = $('.numberkotak2_'+from2).offset().top;
+                }        
+                var scrollTo2 = $('.numberkotak2_'+begin2).offset().top;
+                // scroll one
+                $('#result_matchso').animate({
+                    scrollTop: scrollTo2-scrollFrom2+last2
+                },1000);
+                last2=scrollTo2-scrollFrom2+last2;
+                begin2++;
+                
+                //$('.numberkotak2_'+from2).hide( 'slide', {}, 1000, callback );
+                //$('.numberkotak_1').effect( 'slide', {}, 1000, callback ); //Effect OUT
+            }
+        }else{
+            $('#result_matchso').animate({ scrollTop: 0 }, 1000);
+            begin2=1;
+            last2=0;
+        }        
+    }
+    function scrollDown3() {
+        if(begin3<end3){            
+            if($('#result_trukmasuk').scrollTop() + $('#result_trukmasuk').innerHeight() >= $('#result_trukmasuk')[0].scrollHeight) {
+                begin3++;
+                //console.log('end of scroll result_trukmasuk');
+            }else{
+                var from3 = begin3-1;
+                if(begin3==1){
+                    var scrollFrom3 = $('#result_trukmasuk').offset().top;
+                }else{
+                    var scrollFrom3 = $('.numberkotak3_'+from3).offset().top;
+                }        
+                var scrollTo3 = $('.numberkotak3_'+begin3).offset().top;
+                // scroll one
+                $('#result_trukmasuk').animate({
+                    scrollTop: scrollTo3-scrollFrom3+last3
+                },1000);
+                last3=scrollTo3-scrollFrom3+last3;
+                begin3++;
+
+                //$('.numberkotak3_'+from3).hide( 'slide', {}, 1000, callback );
+                //$('.numberkotak_1').effect( 'slide', {}, 1000, callback ); //Effect OUT
+            }
+        }else{
+            $('#result_trukmasuk').animate({ scrollTop: 0 }, 1000);
+            begin3=1;
+            last3=0;
+        }        
+    }
+    function scrollDown4() {
+        if(begin4<end4){            
+            if($('#result_cnvload').scrollTop() + $('#result_cnvload').innerHeight() >= $('#result_cnvload')[0].scrollHeight) {
+                begin4++;
+                //console.log('end of scroll result_trukmasuk');
+            }else{
+                var from4 = begin4-1;
+                if(begin4==1){
+                    var scrollFrom4 = $('#result_cnvload').offset().top;
+                }else{
+                    var scrollFrom4 = $('.numberkotak4_'+from4).offset().top;
+                }        
+                var scrollTo4 = $('.numberkotak4_'+begin4).offset().top;
+                // scroll one
+                $('#result_cnvload').animate({
+                    scrollTop: scrollTo4-scrollFrom4+last4
+                },1000);
+                last4=scrollTo4-scrollFrom4+last4;
+                begin4++;
+
+                //$('.numberkotak4_'+from3).hide( 'slide', {}, 1000, callback );
+                //$('.numberkotak_1').effect( 'slide', {}, 1000, callback ); //Effect OUT
+            }
+        }else{
+            $('#result_cnvload').animate({ scrollTop: 0 }, 1000);
+            begin4=1;
+            last4=0;
+        }        
+    }
+    // Callback function to bring a hidden box back
+    function callback() {
+        $(this).removeAttr( "style" );
+    }    
+    function scrollToEnd() {
+        var container = $('#result_antri');
+        container.animate({
+            //scrolls to center
+            scrollTop: container.prop("scrollHeight")
+        });
+    }
+    function getplant(){
+        $('#filter_animation').show();
+        var comp  = $('#filterComp').val();
+        $('#filterPlant').html('');
+        $('#filterPlant').attr('disabled',true);
+        $('#carix').prop('disabled', true);        
+        var data = {comp:comp};
+        $.post("<?= base_url('index.php/dashboard/get_plant')?>", data, function(res) { 
+            var result = res.hasil;
+            for (var i = 0; i < result.length; i++) {
+                var opt = '<option value="'+ result[i].kode +'">'+ result[i].kode +'-'+ result[i].nama +'</option>';
+                $('#filterPlant').append(opt);
+            } 
+            $('#filter_animation').hide();
+            $('#filterPlant').attr('disabled',false);
+            $('#carix').prop('disabled', false);
+            if(comp=='<?=$comp?>'){
+                $('#filterPlant').val('<?=$plant?>');
+            }
+        },'json');
+    }
+    
+    //Fungsi CountDown
+    function startTimer(milisecond) {
+        var duration = milisecond/1000;
+        var start = Date.now(),
+            diff,
+            minutes,
+            seconds;
+        function timerz() {
+            // get the number of seconds that have elapsed since 
+            // startTimer() was called
+            diff = duration - (((Date.now() - start) / 1000) | 0);
+
+            // does the same job as parseInt truncates the float
+            minutes = (diff / 60) | 0;
+            seconds = (diff % 60) | 0;
+
+            minutes = minutes < 10 ? "0" + minutes : minutes;
+            seconds = seconds < 10 ? "0" + seconds : seconds;
+
+            $("#time_countdown").html(minutes + ":" + seconds); 
+
+            if (diff <= 0) {
+                // add one second so that the count down starts at the full duration
+                // example 05:00 not 04:59
+                start = Date.now() + 1000;
+            }
+        };
+        // we don't want to wait a full second before the timer starts
+        timerz();
+        viewtime = setInterval(timerz, 1000);
+    }
+    //Fungsi Show Detail
+    function changelink(){
+        var comp  = $('#filterComp').val();
+        var plantx = $('#filterPlant').val();
+        if(plantx==null){ var plant='<?=$plant?>'; }else{ var plant=plantx; }
+        $("#show_antritruk").attr('href', '<?= base_url('index.php/sub_dashboard/detail_antritruk')?>'+'/'+comp+'/'+plant);
+        $("#show_matchso").attr('href', '<?= base_url('index.php/sub_dashboard/detail_matchso')?>'+'/'+comp+'/'+plant);
+        $("#show_timbang").attr('href', '<?= base_url('index.php/sub_dashboard/detail_timbang')?>'+'/'+comp+'/'+plant);
+        $("#show_loading").attr('href', '<?= base_url('index.php/sub_dashboard/detail_loading')?>'+'/'+comp+'/'+plant);
+        $("#header-list-menu").each(function(i, items_list){
+            $(items_list).find('a').each(function(j, items){
+                var links = items.href.split("/");
+                var new_link = links[0]+'/'+links[1]+'/'+links[2]+'/'+links[3]+'/'+links[4]+'/'+links[5]+'/'+links[6]+'/'+links[7]+'/'+links[8]+'/'+comp+'/'+plant;
+                //console.log(new_link);
+                $(this).attr('href', new_link);
+            });
+        });
+    }
+</script>
